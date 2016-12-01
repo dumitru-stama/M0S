@@ -863,8 +863,6 @@ error_freeing:
 // This string is here to fill in the remaining space till 1024 bytes
 // Comes after the .pool section so it's the last available thing in .bin
 .ascii "M0S-1K HaD Challenge"
-//.ascii "M0S Hackaday 1KB"
-//-----------LATER EDIT : this string can no longer fit because of bug fixes :)
 
 //------------------------------------------------------------------------------
 // I define this here as weak because most likely I will define it again in the C code
