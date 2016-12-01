@@ -19,7 +19,7 @@ It was written for the Hackaday 1KB contest : https://hackaday.io/contest/18215-
 Where is it ?
 -------------
 All functionality of M0S is in m0s.asm file. There are some hard coded constants available in stm32f072.inc.
-The demo cam be found in demo.c and demo.h
+The demo can be found in demo.c and demo.h
 
 How to Build ?
 --------------
