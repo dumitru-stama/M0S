@@ -568,11 +568,11 @@ sleep:
 //           If you created two tasks with the same address then... good luck :)
 //------------------------------------------------------------------------------
 get_task_id:
-    ldr r3,=0x20000000
     adds r0,1
     movs r1,MAX_TASKS-1             // start from the last task
 
 get_task_loop:
+    ldr r3,=0x20000000
     lsls r2,r1,TASK_ENTRY_SHIFT_L
     adds r2,OFS_TASK_ARRAY
     adds r2,r3                      // r2 = address of the task in array
