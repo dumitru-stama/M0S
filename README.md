@@ -18,8 +18,8 @@ It was written for the Hackaday 1KB contest : https://hackaday.io/contest/18215-
 
 Where is it ?
 -------------
-All functionality of M0S is in m0s.asm file. There are some hard coded constants available in stm32f072.inc.
-The demo can be found in demo.c and demo.h
+All functionality of M0S is in m0s.asm file. It was written using unified syntax and compiled with GNU assembler for ARM.
+There are some hard coded constants available in stm32f072.inc.
 
 How to Build ?
 --------------
@@ -27,16 +27,11 @@ Use one of the two shell scripts included :
 - build_os_only
 - build_demo
 
-You have to edit them to replace the path of the ARM tools according to your setup
-
+You have to edit them to replace the path of the ARM tools (as, gcc, ld, objcopy) according to your setup.
 You can also use the included Makefile. By default it builds the OS only.
-
 You have to uncomment and comment two lines inside to build the demo. 
-
 Instructions are provided in the Makefile.
-
 You build by issuing "make" command. 
-
 There is also a "make gdb" command which launches the debugger.
 
 You will see a text message displaying the size of the actual code from the .elf file like this:
