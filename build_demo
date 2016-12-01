@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -f *.bin *.elf *.o
+rm -f *.elf *.o
 ~/armgcc/bin/arm-none-eabi-gcc -fno-builtin-free -fno-builtin-memset -mcpu=cortex-m0 -mthumb -c -o2 -Wall demo.c -o demo.o
 ~/armgcc/bin/arm-none-eabi-as -mcpu=cortex-m0 -o m0s.o m0s.asm
 ~/armgcc/bin/arm-none-eabi-ld -Ttext 0x8000000 m0s.o demo.o -o m0s.elf

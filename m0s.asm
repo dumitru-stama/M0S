@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+// M0S - Tiny 1024 bytes RTOS for Cortex M0 devices (and other Ms)
+// Author: Dumitru Stama
+// Date: 2016-11-30
+// License: Public Domain
+//------------------------------------------------------------------------------
 .thumb
 .syntax unified
 .include "stm32f072.inc"

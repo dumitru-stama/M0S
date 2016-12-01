@@ -1,3 +1,10 @@
+//------------------------------------------------------------------------------
+// M0S - Tiny 1024 bytes RTOS for Cortex M0 devices (and other Ms)
+// Author: Dumitru Stama
+// Date: 2016-11-30
+// License: Public Domain
+//------------------------------------------------------------------------------
+
 .equ	TS_CAL1				, 0x1FFFF7B8
 .equ	TS_CAL2				, 0x1FFFF7C2
 .equ	VREFINT_CAL			, 0x1FFFF7BA
