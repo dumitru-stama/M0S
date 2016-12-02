@@ -14,6 +14,8 @@
 // Internal functions
 //
 void flip_bit(uint32_t port, uint32_t bit);
+void set_bit(uint32_t port, uint32_t bit);
+void reset_bit(uint32_t port, uint32_t bit);
 void task1();
 void task2();
 

@@ -258,7 +258,7 @@ restore_stack:
     msr PSP,r0                      // set PSP to the new level
 
 scheduler_exit:
-    //isb                           // might be useful, kills instruction cache
+    isb                           // might be useful, kills instruction cache
     ret                             // go back to the scheduled task
 
 //------------------------------------------------------------------------------
@@ -270,54 +270,57 @@ scheduler_exit:
 // tick event (scheduler timer) comes along; saves energy
 //------------------------------------------------------------------------------
 idle_task:
-    cpsid i                     // Disable interrupts. We don't want to be
-    ldr r5,=FREE_MEMORY_START   // unscheduled while combining memory blocks
-    ldr r4,=FREE_MEMORY_END     // Highly unlikely since it executes only once
-    movs r0,7                   // Try to lock the memory mutex
-    call mutex_try_lock         // if it's unsuccessful it will enter the
-    orrs r0,r0                  // infinite loop
-    bne enable_ints             // Mutex is used just in case a thread is 
-                                // currently allocating memory and was unsched.
-                                // while having the mutex; we should'nt combine
-idle_loop:                      // Mutex was aquired so we are ok to process mem
-    ldr r1,[r5]                 // get the first control word
-    orrs r1,r1                  // set the flags
-    bmi check_next_block        // if it's negative (vit 31 set) it's used
-    beq idle_release_locks      // if it's 0 it was never used and there is
-                                // nothing to combine
-    adds r2,r1,4                // if it's positive we skip the control word
-    adds r2,r5                  // add the base address
-    cmp r2,r4                   // and check to see if it's higher than max
-    bhs idle_release_locks      // If it is then we finished and we infinit-loop
+	wfi
+	b .	
 
-    ldr r3,[r2]                 // Check to see if next block is free as well
-    orrs r3,r3                  // If it's used we go back to treat it as the
-    bmi check_next_block        // first block and check it against the next
-    bne combine_zones           // if it's free as well we try to combine them
-                                // If it's 0 then it's unallocated so we get
-    subs r3,r4,r2               // the remaining size
-    subs r3,4                   // the remaining size minus the control word
-
-combine_zones:
-    adds r1,r3
-    adds r1,4
-    str r1,[r5]                 // combine zones and store the result back
-
-check_next_block:
-    uxth r1,r1                  // sign extend the lower 16 bits into the word
-    adds r1,4                   // skip the control word
-    adds r5,r1                  // add the base address
-
-    cmp r5,r4                   // if it's less than max we go and check it out
-    blo idle_loop               // If it's more or equal we are done
-
-idle_release_locks:
-    movs r0,7                   // release the mutex
-    call mutex_unlock
-
-enable_ints:
-    cpsie i                     // Enable interrupts
-    b .                         // infinite loop
+//    cpsid i                     // Disable interrupts. We don't want to be
+//    ldr r5,=FREE_MEMORY_START   // unscheduled while combining memory blocks
+//    ldr r4,=FREE_MEMORY_END     // Highly unlikely since it executes only once
+//    movs r0,7                   // Try to lock the memory mutex
+//    call mutex_try_lock         // if it's unsuccessful it will enter the
+//    orrs r0,r0                  // infinite loop
+//    bne enable_ints             // Mutex is used just in case a thread is 
+//                                // currently allocating memory and was unsched.
+//                                // while having the mutex; we should'nt combine
+//idle_loop:                      // Mutex was aquired so we are ok to process mem
+//    ldr r1,[r5]                 // get the first control word
+//    orrs r1,r1                  // set the flags
+//    bmi check_next_block        // if it's negative (vit 31 set) it's used
+//    beq idle_release_locks      // if it's 0 it was never used and there is
+//                                // nothing to combine
+//    adds r2,r1,4                // if it's positive we skip the control word
+//    adds r2,r5                  // add the base address
+//    cmp r2,r4                   // and check to see if it's higher than max
+//    bhs idle_release_locks      // If it is then we finished and we infinit-loop
+//
+//    ldr r3,[r2]                 // Check to see if next block is free as well
+//    orrs r3,r3                  // If it's used we go back to treat it as the
+//    bmi check_next_block        // first block and check it against the next
+//    bne combine_zones           // if it's free as well we try to combine them
+//                                // If it's 0 then it's unallocated so we get
+//    subs r3,r4,r2               // the remaining size
+//    subs r3,4                   // the remaining size minus the control word
+//
+//combine_zones:
+//    adds r1,r3
+//    adds r1,4
+//    str r1,[r5]                 // combine zones and store the result back
+//
+//check_next_block:
+//    uxth r1,r1                  // sign extend the lower 16 bits into the word
+//    adds r1,4                   // skip the control word
+//    adds r5,r1                  // add the base address
+//
+//    cmp r5,r4                   // if it's less than max we go and check it out
+//    blo idle_loop               // If it's more or equal we are done
+//
+//idle_release_locks:
+//    movs r0,7                   // release the mutex
+//    call mutex_unlock
+//
+//enable_ints:
+//    cpsie i                     // Enable interrupts
+//    b .                         // infinite loop
     //wfi					    // A much better option than infinite loop
     							// it will go to sleep and save energy
     							// It needs setup though so back to inf. loop
@@ -346,6 +349,7 @@ _start:
     ldr r0, =SYSTICK_CTRL
     ldr r1,[r0,SYSTICK_LOAD]    // set reload value
     ldr r1,=0xBB80              // 48000 = 1ms based on the fact that PLL will 
+    //ldr r1,=0x75300              // 480000 = 10ms based on the fact that PLL will 
     str r1,[r0,SYSTICK_LOAD]    // be activated in init()
     ldr r1,[r0,SYSTICK_VAL]     // clear current value
     movs r1, 0

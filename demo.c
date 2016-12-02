@@ -21,12 +21,12 @@ void task1(){
         //memset(my_mem2, 0x42, 4);
         //if (my_mem1 != 0) free(my_mem1);
         flip_bit(GPIOA, 5);
-        sleep(40);
+        sleep(4);
 
         //if (my_mem2 != 0) free(my_mem2);
 
         flip_bit(GPIOA, 5);
-        sleep(460);                     // during this sleep the idle task is supposed to combine the blocks
+        sleep(46);                     // during this sleep the idle task is supposed to combine the blocks
 
         test++;
         // kill task2 after 5 seconds
@@ -38,10 +38,10 @@ void task1(){
 void task2(){
     while(1) {
         flip_bit(GPIOB, 5);
-        sleep(100);
+        sleep(10);
 
         flip_bit(GPIOB, 5);
-        sleep(900);
+        sleep(90);
     }
 }
 
@@ -73,5 +73,27 @@ void flip_bit(uint32_t port, uint32_t bit) {
     val = *(uint32_t *)((uint8_t *)port+ODR);
     val ^= 1 << bit;
     *(uint32_t *)((uint8_t *)port+ODR) = val;
+}
+
+//---------------------------------------------------
+void set_bit(uint32_t port, uint32_t bit) {
+    uint32_t val;
+    uint32_t *addr;
+
+	addr = (uint32_t *)((uint8_t *)port+ODR);
+    val = *addr;
+    val |= 1 << bit;
+    *addr = val;
+}
+
+//---------------------------------------------------
+void reset_bit(uint32_t port, uint32_t bit) {
+    uint32_t val;
+    uint32_t *addr;
+
+	addr = (uint32_t *)((uint8_t *)port+ODR);
+    val = *addr;
+    val &= ~(1 << bit);
+    *addr = val;
 }
 
