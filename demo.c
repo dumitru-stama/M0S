@@ -10,27 +10,27 @@
 //-----------------------------------------------------
 void task1(){
     uint32_t test = 0;
-    uint8_t *my_mem1;
-    uint8_t *my_mem2;
+    //uint8_t *my_mem1;
+    //uint8_t *my_mem2;
     
 
     while(1) {
-        my_mem1 = malloc(13);           // it will be rounded to 16
-        memset(my_mem1, 0x41, 4);
-        my_mem2 = malloc(16);
-        memset(my_mem2, 0x42, 4);
-        if (my_mem1 != 0) free(my_mem1);
+        //my_mem1 = malloc(13);           // it will be rounded to 16
+        //memset(my_mem1, 0x41, 4);
+        //my_mem2 = malloc(16);
+        //memset(my_mem2, 0x42, 4);
+        //if (my_mem1 != 0) free(my_mem1);
         flip_bit(GPIOA, 5);
-        sleep(80);
+        sleep(40);
 
-        if (my_mem2 != 0) free(my_mem2);
+        //if (my_mem2 != 0) free(my_mem2);
 
         flip_bit(GPIOA, 5);
-        sleep(920);                     // during this sleep the idle task is supposed to combine the blocks
+        sleep(460);                     // during this sleep the idle task is supposed to combine the blocks
 
         test++;
         // kill task2 after 5 seconds
-        if (test == 5) kill(get_task_id(&task2));
+        if (test == 15) kill(get_task_id(&task2));
     }
 }
 
