@@ -317,7 +317,9 @@ idle_release_locks:
 
 enable_ints:
     cpsie i                     // Enable interrupts
-    b .                         // infinite loop
+    //b .                         // infinite loop
+    wfi							// A much better option than infinite loop
+    							// it will go to sleep and save energy
 
 //==============================================================================
 // This is the main entry point as mentioned in the second interrupt vector
