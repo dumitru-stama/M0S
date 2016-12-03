@@ -141,6 +141,7 @@
 .equ    OFS_SYS_TIMER       , 0x0008        // 49 days rollover if systick period is 1ms
 .equ    OFS_IDLE_STACK_POS  , 0x000C        // here I store the idle task stack top
 .equ    OFS_IDLE_NR_SCHED   , 0x0010        // here I store how many times i scheduled the idle task
+.equ	OFS_MUTEX_STORAGE	, 0x0014
 .equ    OFS_MUTEX_AREA      , OFS_TASK_ARRAY + (MAX_TASKS * SIZE_TASK_ENTRY)
 
 .equ    OFS_TASK_ARRAY      , 0x0020        // task array starts at 0x20000020

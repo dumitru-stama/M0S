@@ -73,6 +73,7 @@ Vector_Table:
 //  .word  default_handler+1            // USB
 
 default_handler:
+	//mrs r7,PSP
     b default_handler
 
 //------------------------------------------------------------------------------
@@ -135,13 +136,14 @@ process_sleeping_tasks:
 
 check_to_see_if_mutex_is_free:
     ldr r5,[r3,TASK_ENTRY_MUTEX]    // It is waiting for a MUTEX so we check it
-    adds r5,OFS_MUTEX_AREA          // to see if it's free and can be locked
-    ldr r4,[r0,r5]
-    orrs r4,r4                      // If the MUTEX cannot be locked then
+	ldr r4,[r0,OFS_MUTEX_STORAGE]	// get the value storin mutexes
+	movs r7,1
+	lsls r7,r5
+	tst r4,r7						// see if mutex is available
     bne advance_counter             // we jump to the next task
 
-    adds r4,1                       // If we reached this branch then the MUTEX
-    str r4,[r0,r5]                  // is free so we lock it and set the state
+	orrs r4,r7						// It was available so lock it
+	str r4,[r0,OFS_MUTEX_STORAGE]
     b set_state_to_running          // to running so we can schedule the task
 
 maybe_is_sleeping:
@@ -165,6 +167,7 @@ set_state_to_running:
     ldr r4,[r5,FRAME_PC+0x20]       // 0x20 with the r8-r11 registers overhead
     adds r4,2                       // skip the "b ." instruction to allow the
     str r4,[r5,FRAME_PC+0x20]       // task to continue execution
+    dsb								// make sure the data is synced/written
     
 do_not_advance_pc:
     movs r4,STATE_RUNNING           // set the state to "running"
@@ -258,7 +261,7 @@ restore_stack:
     msr PSP,r0                      // set PSP to the new level
 
 scheduler_exit:
-    //isb                           // might be useful, kills instruction cache
+    isb                           // might be useful, kills instruction cache
     ret                             // go back to the scheduled task
 
 //------------------------------------------------------------------------------
@@ -270,12 +273,9 @@ scheduler_exit:
 // tick event (scheduler timer) comes along; saves energy
 //------------------------------------------------------------------------------
 idle_task:
-//	wfi
-//	b .	
-
     ldr r5,=FREE_MEMORY_START   // unscheduled while combining memory blocks
     ldr r4,=FREE_MEMORY_END     // Highly unlikely since it executes only once
-    movs r0,7                   // Try to lock the memory mutex
+    movs r0,0                   // Try to lock the memory mutex
     call mutex_try_lock         // if it's unsuccessful it will enter the
     orrs r0,r0                  // infinite loop
     bne enable_ints             // Mutex is used just in case a thread is 
@@ -315,7 +315,7 @@ check_next_block:
     blo idle_loop               // If it's more or equal we are done
 
 idle_release_locks:
-    movs r0,7                   // release the mutex
+    movs r0,0                   // release the mutex
     call mutex_unlock
 
 enable_ints:
@@ -688,89 +688,6 @@ memset:
     ret
 
 //------------------------------------------------------------------------------
-// Tries to lock a mutex. If it fails it waits for the mutex release
-// This function blocks and only returns if the mutex was locked
-// Input:   r0 = mutex id (0-6) because we use mutex 7 for memory allocations
-// No return is needed since it blocks if lock was unsuccessful
-//------------------------------------------------------------------------------
-mutex_lock:
-    movs r3,0                       // this specifies we want to block
-    b mutex_helper
-
-//------------------------------------------------------------------------------
-// Tries to lock a mutex. If it fails it returns without blocking
-// Input:   r0 = mutex id (0-7)
-// Return:  r0 = 0 if mutex was locked and 1 if it could not be locked
-// WARNING! No validation on input parameter. Make sure you sanitize
-//------------------------------------------------------------------------------
-mutex_try_lock:
-    movs r3,1                       // this specifies we don't want to block
-
-mutex_helper:
-    lsls r0,2                       // every mutex is one "word" (4 bytes)
-    ldr r1,=0x20000000
-    adds r1,OFS_MUTEX_AREA          // r1 address of the mutex area
-    
-    // r1 points to the beginning of the mutex area
-    cpsid i                         // CRITICAL SECTION !!!
-
-    ldr r2,[r1,r0]                  // get mutex's value
-    orrs r2,r2                      // modify flags according to its value
-    bne mutex_not_available         // if it's not available we jump
-
-    adds r2,1
-    str r2, [r1,r0]                 // lock mutex
-    movs r0,0                       // return success
-
-inter_ret:
-    cpsie i
-    ret
-
-mutex_not_available:
-    orrs r3,r3
-    beq mutex_block                 // jump if it's the blocking call
-
-    movs r0,1                       // return non-zero in case mutex could not be locked
-    b inter_ret
-
-mutex_block:
-    ldr r1,=0x20000000              // Here we are supposed to block and wait
-    ldr r2,[r1]                     // get current task id
-    lsls r2,TASK_ENTRY_SHIFT_L
-    adds r2,OFS_TASK_ARRAY
-    adds r2,r1                      // r2 points to the current task structure
-
-    str r0,[r2,TASK_ENTRY_MUTEX]    // store the mutex*4 in task structure
-    movs r0,STATE_WAIT_FOR_MUTEX    // in the mutex reserved area
-    str r0,[r2,TASK_ENTRY_STATE]    // set the state to "wait for mutex"
-
-    cpsie i                         // re-enable interrupts and intinite loop
-                                    // like sleep mode, this will have to be 
-                                    // adjusted in scheduler once the mutex 
-    b .                             // can be locked
-
-    ret
-
-//------------------------------------------------------------------------------
-// It unlocks a mutex; It doesn't check if the current task actually
-// holds the mutex since there is no mechanism in place for this :)
-// Input:   r0 = mutex id
-//------------------------------------------------------------------------------
-mutex_unlock:
-    lsls r0,2                       // every mutex is 4 bytes
-    ldr r1,=0x20000000
-    adds r1,OFS_MUTEX_AREA
-    ldr r2,[r1,r0]
-    subs r2,1                       // unlocks it
-    bpl store_mutex                 // if it was unlocked multiple times it will
-
-    movs r2,0                       // make sure the actual value stays 0
-
-store_mutex:
-    str r2,[r1,r0]
-    ret
-
-//------------------------------------------------------------------------------
 // Allocates memory
 // Input:   r0 = size in bytes (max 65532 or 0xFFFC)
 //               16 bits - 4 because we allocate word aligned memory)
@@ -780,8 +697,8 @@ store_mutex:
 malloc:
     push {r4-r5,lr}                 // lr has to be saved because of calls
     movs r4,r0                      // save parameter to make sure it will
-    movs r0,7                       // not get trashed in the next call
-    call mutex_lock                 // lock 8th mutex
+    movs r0,0                       // not get trashed in the next call
+    call mutex_lock                 // lock mutex 0
 
     movs r0,r4                      // restore the parameter
     movs r1,3                       // make sure all memory is word aligned
@@ -834,12 +751,99 @@ exit_with_null_pointer:
 
 exit_malloc:
     movs r4,r1                      // save return value
-    movs r0,7
+    movs r0,0
     call mutex_unlock
 
     movs r0,r4                      // restore return value             
     pop {r4-r5,pc}
     ret
+
+//------------------------------------------------------------------------------
+// It unlocks a mutex; It doesn't check if the current task actually
+// holds the mutex since there is no mechanism in place for this :)
+// Input:   r0 = mutex id
+//------------------------------------------------------------------------------
+mutex_unlock:
+	ldr r1,=0x20000000
+	movs r3,1
+	lsls r3,r0
+	mvns r3,r3
+	
+	cpsid i
+	
+	ldr r2,[r1,OFS_MUTEX_STORAGE]
+	ands r2,r3
+	str r2,[r1,OFS_MUTEX_STORAGE]
+
+	cpsie i
+
+	ret
+
+//------------------------------------------------------------------------------
+// Tries to lock a mutex. If it fails it returns without blocking
+// Input:   r0 = mutex id (0-7)
+// Return:  r0 = 0 if mutex was locked and 1 if it could not be locked
+// WARNING! No validation on input parameter. Make sure you sanitize
+//------------------------------------------------------------------------------
+mutex_try_lock:
+	ldr r1,=0x20000000
+	movs r3,1
+	lsls r3,r0
+	
+	cpsid i
+	
+	ldr r2,[r1,OFS_MUTEX_STORAGE]
+	movs r0,r2
+	ands r0,r3
+	beq mutex_is_free
+	
+	cpsie i
+
+	movs r0,1						// return fail
+	ret
+
+//------------------------------------------------------------------------------
+// Tries to lock a mutex. If it fails it waits for the mutex release
+// This function blocks and only returns if the mutex was locked
+// Input:   r0 = mutex id (0-6) because we use mutex 7 for memory allocations
+// No return is needed since it blocks if lock was unsuccessful
+//------------------------------------------------------------------------------
+mutex_lock:
+	ldr r1,=0x20000000
+	movs r3,1
+	lsls r3,r0
+	
+	cpsid i
+	
+	ldr r2,[r1,OFS_MUTEX_STORAGE]
+	ands r2,r3
+	beq mutex_is_free
+
+	cpsie i
+
+    ldr r2,[r1]                     // get current task id
+    lsls r2,TASK_ENTRY_SHIFT_L
+    adds r2,OFS_TASK_ARRAY
+    adds r2,r1                      // r2 points to the current task structure
+
+    str r0,[r2,TASK_ENTRY_MUTEX]    // store the mutex in task structure
+    movs r0,STATE_WAIT_FOR_MUTEX    // in the mutex reserved area
+    str r0,[r2,TASK_ENTRY_STATE]    // set the state to "wait for mutex"
+    
+    b .
+
+    ret
+
+
+mutex_is_free:
+	ldr r2,[r1,OFS_MUTEX_STORAGE]
+	orrs r2,r3
+	str r2,[r1,OFS_MUTEX_STORAGE]
+
+	cpsie i
+	movs r0,0						// return success
+	ret
+
 
 //------------------------------------------------------------------------------
 // Frees allocated memory
@@ -869,7 +873,8 @@ error_freeing:
 //-----------------------------------------------------------------------------
 // This string is here to fill in the remaining space till 1024 bytes
 // Comes after the .pool section so it's the last available thing in .bin
-.ascii "M0S-1K HaD Challenge"
+// Update: string doesn't fit anymore, I updated the mutexes to work better
+//.ascii "M0S-1K HaD Challenge"
 
 //------------------------------------------------------------------------------
 // I define this here as weak because most likely I will define it again in the C code

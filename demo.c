@@ -26,7 +26,7 @@ void task1(){
         if (my_mem2 != 0) free(my_mem2);
 
         flip_bit(GPIOA, 5);
-        sleep(78);                     // during this sleep the idle task is supposed to combine the blocks
+        sleep(68);                     // during this sleep the idle task is supposed to combine the blocks
 
         test++;
         // kill task2 after 5 seconds
@@ -41,7 +41,7 @@ void task2(){
         sleep(2);
 
         flip_bit(GPIOB, 5);
-        sleep(198);
+        sleep(88);
     }
 }
 
