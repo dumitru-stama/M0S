@@ -73,7 +73,7 @@ Vector_Table:
 //  .word  default_handler+1            // USB
 
 default_handler:
-	//mrs r7,PSP
+    //mrs r7,PSP
     b default_handler
 
 //------------------------------------------------------------------------------
@@ -136,14 +136,14 @@ process_sleeping_tasks:
 
 check_to_see_if_mutex_is_free:
     ldr r5,[r3,TASK_ENTRY_MUTEX]    // It is waiting for a MUTEX so we check it
-	ldr r4,[r0,OFS_MUTEX_STORAGE]	// get the value storin mutexes
-	movs r7,1
-	lsls r7,r5
-	tst r4,r7						// see if mutex is available
+    ldr r4,[r0,OFS_MUTEX_STORAGE]   // get the value storin mutexes
+    movs r7,1
+    lsls r7,r5
+    tst r4,r7                       // see if mutex is available
     bne advance_counter             // we jump to the next task
 
-	orrs r4,r7						// It was available so lock it
-	str r4,[r0,OFS_MUTEX_STORAGE]
+    orrs r4,r7                      // It was available so lock it
+    str r4,[r0,OFS_MUTEX_STORAGE]
     b set_state_to_running          // to running so we can schedule the task
 
 maybe_is_sleeping:
@@ -167,7 +167,7 @@ set_state_to_running:
     ldr r4,[r5,FRAME_PC+0x20]       // 0x20 with the r8-r11 registers overhead
     adds r4,2                       // skip the "b ." instruction to allow the
     str r4,[r5,FRAME_PC+0x20]       // task to continue execution
-    dsb								// make sure the data is synced/written
+    dsb                             // make sure the data is synced/written
     
 do_not_advance_pc:
     movs r4,STATE_RUNNING           // set the state to "running"
@@ -321,9 +321,9 @@ idle_release_locks:
 enable_ints:
     cpsie i                     // Enable interrupts
     b .                         // infinite loop
-    //wfi					    // A much better option than infinite loop
-    							// it will go to sleep and save energy
-    							// It needs setup though so back to inf. loop
+    //wfi                       // A much better option than infinite loop
+                                // it will go to sleep and save energy
+                                // It needs setup though so back to inf. loop
 
 //==============================================================================
 // This is the main entry point as mentioned in the second interrupt vector
@@ -764,20 +764,20 @@ exit_malloc:
 // Input:   r0 = mutex id
 //------------------------------------------------------------------------------
 mutex_unlock:
-	ldr r1,=0x20000000
-	movs r3,1
-	lsls r3,r0
-	mvns r3,r3
-	
-	cpsid i
-	
-	ldr r2,[r1,OFS_MUTEX_STORAGE]
-	ands r2,r3
-	str r2,[r1,OFS_MUTEX_STORAGE]
+    ldr r1,=0x20000000
+    movs r3,1
+    lsls r3,r0
+    mvns r3,r3
+    
+    cpsid i
+    
+    ldr r2,[r1,OFS_MUTEX_STORAGE]
+    ands r2,r3
+    str r2,[r1,OFS_MUTEX_STORAGE]
 
-	cpsie i
+    cpsie i
 
-	ret
+    ret
 
 //------------------------------------------------------------------------------
 // Tries to lock a mutex. If it fails it returns without blocking
@@ -786,21 +786,21 @@ mutex_unlock:
 // WARNING! No validation on input parameter. Make sure you sanitize
 //------------------------------------------------------------------------------
 mutex_try_lock:
-	ldr r1,=0x20000000
-	movs r3,1
-	lsls r3,r0
-	
-	cpsid i
-	
-	ldr r2,[r1,OFS_MUTEX_STORAGE]
-	movs r0,r2
-	ands r0,r3
-	beq mutex_is_free
-	
-	cpsie i
+    ldr r1,=0x20000000
+    movs r3,1
+    lsls r3,r0
+    
+    cpsid i
+    
+    ldr r2,[r1,OFS_MUTEX_STORAGE]
+    movs r0,r2
+    ands r0,r3
+    beq mutex_is_free
+    
+    cpsie i
 
-	movs r0,1						// return fail
-	ret
+    movs r0,1                       // return fail
+    ret
 
 //------------------------------------------------------------------------------
 // Tries to lock a mutex. If it fails it waits for the mutex release
@@ -809,17 +809,17 @@ mutex_try_lock:
 // No return is needed since it blocks if lock was unsuccessful
 //------------------------------------------------------------------------------
 mutex_lock:
-	ldr r1,=0x20000000
-	movs r3,1
-	lsls r3,r0
-	
-	cpsid i
-	
-	ldr r2,[r1,OFS_MUTEX_STORAGE]
-	ands r2,r3
-	beq mutex_is_free
+    ldr r1,=0x20000000
+    movs r3,1
+    lsls r3,r0
+    
+    cpsid i
+    
+    ldr r2,[r1,OFS_MUTEX_STORAGE]
+    ands r2,r3
+    beq mutex_is_free
 
-	cpsie i
+    cpsie i
 
     ldr r2,[r1]                     // get current task id
     lsls r2,TASK_ENTRY_SHIFT_L
@@ -836,13 +836,13 @@ mutex_lock:
 
 
 mutex_is_free:
-	ldr r2,[r1,OFS_MUTEX_STORAGE]
-	orrs r2,r3
-	str r2,[r1,OFS_MUTEX_STORAGE]
+    ldr r2,[r1,OFS_MUTEX_STORAGE]
+    orrs r2,r3
+    str r2,[r1,OFS_MUTEX_STORAGE]
 
-	cpsie i
-	movs r0,0						// return success
-	ret
+    cpsie i
+    movs r0,0                       // return success
+    ret
 
 
 //------------------------------------------------------------------------------
