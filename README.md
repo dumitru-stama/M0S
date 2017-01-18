@@ -57,6 +57,10 @@ on the board and one added externally:
 	GPIOA pin 5
 	GPIOB pin 5
 
+Video Documentation
+-------------------
+[![M0S Video documentation](https://img.youtube.com/vi/Y0ohEskkMpo/0.jpg)](https://www.youtube.com/watch?v=Y0ohEskkMpo)
+
 License ?
 ---------
 This software is being distributed as "Public Domain". You can do whatever you want with it, use it,
