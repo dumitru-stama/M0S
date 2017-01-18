@@ -15,6 +15,7 @@ It supports the following features:
 - IPC - inter-process communication
 
 It was written for the Hackaday 1KB contest : https://hackaday.io/contest/18215-the-1kb-challenge
+Later Edit: It won first place in the contest : http://hackaday.com/2017/01/13/1-kb-challenge-and-the-winners-are/
 
 Where is it ?
 -------------
